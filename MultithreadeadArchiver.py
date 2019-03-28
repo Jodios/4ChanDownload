@@ -138,7 +138,7 @@ def start_(board, thread, iCount):
     archiveThread(board, threadNumber, iCount)
     iCount = 0
     
-board = 'wg'#input("What board? ")
+board = input("What board? ")
 pages = 10#input("How many pages Do you want to search? ")
 count = 0
 while True:
