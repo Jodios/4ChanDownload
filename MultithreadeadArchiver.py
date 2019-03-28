@@ -47,8 +47,9 @@ def fileExists(path, myDir):
     for file in list_of_files:
         if not '.txt' in file and not '.json' in file:
             exfile = file.split('/')
-            exfile = exfile + exfile[2].split('\\')
-            del(exfile[2])
+            if len(exfile) < 4:
+                exfile = exfile + exfile[2].split('\\')
+                del(exfile[2])
             exfile = exfile[3]
             exfile = exfile.split("_")
             exfile = exfile[3].strip()
@@ -69,8 +70,11 @@ def getLatest(fileList):
     for file in fileList:
         if not ('.txt' in file) and not ('.json' in file):
             file = file.split('/')
-            file = file + file[2].split("\\")
-            del(file[2])
+            #print("*****************", len(file))
+            if len(file) < 4:
+                file = file + file[2].split("\\")
+                del(file[2])            
+            #print("*****************", len(file))
             file = file[3]
             file = file.split('_')
             numbers.append(int(file[0]))
@@ -168,8 +172,8 @@ while True:
                 thread2.start()
                 thread1.join()
                 thread2.join()
+        pp += 1
             #thread1 = threading.Thread(target=start_, args=(board, thread['posts'],))
         # except:
         # 	print("something went wrong")
         # 	pass
-
