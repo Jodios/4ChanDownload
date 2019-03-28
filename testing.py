@@ -6,9 +6,6 @@ import threading
 thread1 = threading.Thread()
 thread2 = threading.Thread()
 thread3 = threading.Thread()
-board = input("What board? ")
-pages = 10
-count = 0
 
 def unhtml(string):
     # replace <tag>...</tag>, possibly more than once
@@ -31,6 +28,8 @@ def countImages(data):
             count = count + 1
     return count, ((size/1024)/1024)
 
+
+
 def checkComment(textPath, comment):
     f = open(textPath, 'r')
     comment = unhtml(comment)
@@ -38,6 +37,9 @@ def checkComment(textPath, comment):
         if comment in line or line in comment:
             return True
     return False
+
+def addToFile(comment, threadFile, postNumber, textPath, filename):
+    commentExists = checkComment(textPath, comment)
 
 def fileExists(path, myDir):
     list_of_files = glob.glob(myDir+"*")
@@ -89,7 +91,7 @@ def archiveThread(board, threadNumber, iCount):
     url = 'https://a.4cdn.org/' + str(board) + '/thread/' + str(threadNumber) + '.json'
     r = requests.get(url)
     t = 0
-    myDir = "../Archives"+"/"+board+"/"+str(threadNumber) + "/"
+    myDir = "Archives"+"/"+board+"/"+str(threadNumber) + "/"
     if not os.path.isdir(myDir):
         os.makedirs(myDir)
     try:
@@ -113,7 +115,7 @@ def archiveThread(board, threadNumber, iCount):
             filename = str(iCount).zfill(3) + "_" + board + '_' + str(threadNumber) + '_' + post['filename'] + ext
             path = myDir + filename
 
-            if (ext == '.gif' or ext =='.png' or ext=='.jpg') and ( fileExists(path, myDir) is False):                  
+            if (ext == '.gif' or ext =='.png' or ext=='.jpg') and ( fileExists(path, myDir) is False):					
                 fileURL = 'https://i.4cdn.org/' + board + '/' + str(tim) + ext
                 saveImage(fileURL, path, iCount)
             else:
@@ -122,26 +124,45 @@ def archiveThread(board, threadNumber, iCount):
             filename = ""
 
         textPath = myDir + "0_" + str(threadNumber)+".txt"
-        threadFile = open(textPath, 'a')    
+        threadFile = open(textPath, 'a')	
+        if 'com' in post:
+            addToFile(post['com'], threadFile, post['no'], textPath, filename)
+        else:
+            addToFile("---------------------------------NO COMMENT----------------------------------", threadFile, post['no'], textPath, filename)
 
+def start_(board, thread, iCount):    
+    print("--------------------DIFFERENT THREAD-------------------------")
+    threadNumber = thread['posts'][0]['no']
+    print(threadNumber)
+    time.sleep(1)
+    iCount = 0
+    archiveThread(board, threadNumber, iCount)
+    iCount = 0
+    time.sleep(1)
+    
 def _start(board, url):
-    r = requests.get(url)
-    data = json.loads(r.text)
-    for thread in data['threads']:
-        print("--------------------DIFFERENT THREAD-------------------------")
-        threadNumber = thread['posts'][0]['no']
-        print(threadNumber)
-        time.sleep(1)
-        iCount = 0
-        archiveThread(board, threadNumber, iCount)
-        iCount = 0
-    pass
+	r = requests.get(url)
+	data = json.loads(r.text)
+	for thread in data['threads']:
+		print("--------------------DIFFERENT THREAD-------------------------")
+		threadNumber = thread['posts'][0]['no']
+		print(threadNumber)
+		time.sleep(1)
+		iCount = 0
+		archiveThread(board, threadNumber, iCount)
+		iCount = 0
+	pass
 
+
+board = input("What board? ")
+pages = 10
+count = 0
 while True:
     for pageNumber in range(1,int(pages), 3):
         url1 = 'https://a.4cdn.org/' + board + '/' + str(pageNumber) + '.json'
         url2 = 'https://a.4cdn.org/' + board + '/' + str(pageNumber+1) + '.json'
         url3 = 'https://a.4cdn.org/' + board + '/' + str(pageNumber+2) + '.json'
+
         thread1 = threading.Thread(target=_start, args=(board, url1, ))
         thread2 = threading.Thread(target=_start, args=(board, url2, ))
         thread3 = threading.Thread(target=_start, args=(board, url3, ))
@@ -151,6 +172,28 @@ while True:
         thread1.join()
         thread2.join()
         thread3.join()
+        '''
+        for thread in range(1, len(data['threads']), 3):
+        	
+            if(thread+2 < 15):
+                thread1 = threading.Thread(target=start_, args=(board, data['threads'][thread], 1, ))
+                thread2 = threading.Thread(target=start_, args=(board, data['threads'][thread+1], 1, ))
+                thread3 = threading.Thread(target=start_, args=(board, data['threads'][thread+2], 1, ))
+                thread1.start()
+                thread2.start()
+                thread3.start()
+                thread1.join()
+                thread2.join()
+                thread3.join()
+            else:
+                thread1 = threading.Thread(target=start_, args=(board, data['threads'][thread], 1, ))
+                thread2 = threading.Thread(target=start_, args=(board, data['threads'][thread+1], 1, ))
+                thread1.start()
+                thread2.start()
+                thread1.join()
+                thread2.join()
+            time.sleep(1)
+			'''
 
 
 
