@@ -82,8 +82,6 @@ def getLatest(fileList):
     print(numbers)
     if not numbers:
         return 0
-    latest = numbers[len(numbers)-1]
-    length = len(numbers)
     return(numbers[len(numbers)-1])
 
 def archiveThread(board, threadNumber, iCount):
@@ -137,16 +135,16 @@ def start_(board, thread, iCount):
     iCount = 0
     archiveThread(board, threadNumber, iCount)
     iCount = 0
+    time.sleep(1)
+    
     
 board = input("What board? ")
-pages = 10#input("How many pages Do you want to search? ")
+pages = 10
 count = 0
 while True:
     for pageNumber in range(1,int(pages)):
-        # try:
         url = 'https://a.4cdn.org/' + board + '/' + str(pageNumber) + '.json'
         r = requests.get(url)
-                # print ('Message1')
         data = json.loads(r.text)
         print(url)
         thread1 = threading.Thread()
@@ -154,7 +152,6 @@ while True:
         thread3 = threading.Thread()
         for thread in range(1, len(data['threads']), 3):
             if(thread+2 < 15):
-                #print(thread, thread + 1, thread+2)
                 thread1 = threading.Thread(target=start_, args=(board, data['threads'][thread], 1, ))
                 thread2 = threading.Thread(target=start_, args=(board, data['threads'][thread+1], 1, ))
                 thread3 = threading.Thread(target=start_, args=(board, data['threads'][thread+2], 1, ))
@@ -165,15 +162,10 @@ while True:
                 thread2.join()
                 thread3.join()
             else:
-                #print(thread, thread + 1)
                 thread1 = threading.Thread(target=start_, args=(board, data['threads'][thread], 1, ))
                 thread2 = threading.Thread(target=start_, args=(board, data['threads'][thread+1], 1, ))
                 thread1.start()
                 thread2.start()
                 thread1.join()
                 thread2.join()
-        pp += 1
-            #thread1 = threading.Thread(target=start_, args=(board, thread['posts'],))
-        # except:
-        # 	print("something went wrong")
-        # 	pass
+            time.sleep(1)
