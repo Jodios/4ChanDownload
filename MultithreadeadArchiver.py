@@ -1,12 +1,12 @@
-import requests, json, io, os, time, glob, re
+import requests, json, io, os, time, glob, re, threading
 import urllib.request as urllib
-import threading
 
 
 thread1 = threading.Thread()
 thread2 = threading.Thread()
 thread3 = threading.Thread()
 board = input("What board? ")
+print("Downloading Everything from {}!".format(board))
 pages = 10
 count = 0
 
@@ -43,7 +43,9 @@ def fileExists(path, myDir):
     list_of_files = glob.glob(myDir+"*")
     name = path.split('/')
     name = name[3]
+    #print(name)
     name = name.split('_')
+    #print(name)
     name = name[3].strip()
     for file in list_of_files:
         if not '.txt' in file and not '.json' in file:
@@ -80,7 +82,7 @@ def getLatest(fileList):
             file = file.split('_')
             numbers.append(int(file[0]))
     numbers.sort()
-    print(numbers)
+    #print(numbers)
     if not numbers:
         return 0
     return(numbers[len(numbers)-1])
@@ -89,7 +91,7 @@ def archiveThread(board, threadNumber, iCount):
     url = 'https://a.4cdn.org/' + str(board) + '/thread/' + str(threadNumber) + '.json'
     r = requests.get(url)
     t = 0
-    myDir = "../Archives"+"/"+board+"/"+str(threadNumber) + "/"
+    myDir = "Archives"+"/"+board+"/"+str(threadNumber) + "/"
     if not os.path.isdir(myDir):
         os.makedirs(myDir)
     try:
@@ -128,9 +130,9 @@ def _start(board, url):
     r = requests.get(url)
     data = json.loads(r.text)
     for thread in data['threads']:
-        print("--------------------DIFFERENT THREAD-------------------------")
+        #print("--------------------DIFFERENT THREAD-------------------------")
         threadNumber = thread['posts'][0]['no']
-        print(threadNumber)
+        #print(threadNumber)
         time.sleep(1)
         iCount = 0
         archiveThread(board, threadNumber, iCount)
@@ -151,7 +153,4 @@ while True:
         thread1.join()
         thread2.join()
         thread3.join()
-
-
-
 
