@@ -10,34 +10,6 @@ print("Downloading Everything from {}!".format(board))
 pages = 10
 count = 0
 
-def unhtml(string):
-    # replace <tag>...</tag>, possibly more than once
-    done = False
-    while not done:
-        temp = re.sub(r'<([^/]\S*)[^>]*>[\s\S]*?</\1>', '', string)
-        done = temp == string
-        string = temp
-    # replace remaining standalone tags, if any
-    string = re.sub(r'<[^>]*>', '', string)
-    string = re.sub(r'\s{2,}', ' ', string)
-    return string.strip()
-
-def countImages(data):
-    count = 0
-    size = 0
-    for post in data['posts']:
-        if 'filename' in post:
-            size = size + post['fsize']
-            count = count + 1
-    return count, ((size/1024)/1024)
-
-def checkComment(textPath, comment):
-    f = open(textPath, 'r')
-    comment = unhtml(comment)
-    for line in f:
-        if comment in line or line in comment:
-            return True
-    return False
 
 def fileExists(path, myDir):
     list_of_files = glob.glob(myDir+"*")
@@ -96,7 +68,6 @@ def archiveThread(board, threadNumber, iCount):
         os.makedirs(myDir)
     try:
         data = json.loads(r.text)
-        imageCount, size = countImages(data)
         filename = ""
     except:
         return
