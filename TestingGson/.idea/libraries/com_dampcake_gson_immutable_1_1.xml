@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="com.dampcake:gson-immutable:1.1" type="repository">
+    <properties maven-id="com.dampcake:gson-immutable:1.1" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/dampcake/gson-immutable/1.1/gson-immutable-1.1.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/guava/guava/18.0/guava-18.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/code/gson/gson/2.4/gson-2.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
