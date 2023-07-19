@@ -12,22 +12,96 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
 
 const (
 	url            = "https://a.4cdn.org"
 	imagesUrl      = "https://i.4cdn.org"
-	defaultBoard   = "g"
 	maxConcurrency = 30
 )
 
 var (
 	posts []Post
 	lock  = &sync.Mutex{}
-	board = defaultBoard
+	board = "gif"
+	//go:embed boards.json
+	BOARDS      []byte
+	downloading = false
+	total       = 0
+	downloaded  = 0
+	directory   = ""
 )
+var progress *widget.ProgressBar
+
+type Board struct {
+	Board string `json:"board"`
+	Title string `json:"title"`
+}
 
 func main() {
+	directory, _ = os.UserHomeDir()
+	boards := struct {
+		Boards []Board `json:"boards"`
+	}{}
+	err := json.Unmarshal(BOARDS, &boards)
+	if err != nil {
+		log.Fatal(err)
+	}
+	boardMap := make(map[string]string)
+	boardTitles := make([]string, 0)
+	for _, b := range boards.Boards {
+		boardTitles = append(boardTitles, b.Title)
+		boardMap[b.Title] = b.Board
+	}
+	board = boards.Boards[0].Board
+
+	downloadApp := app.New()
+	w := downloadApp.NewWindow("4chan Download haha lol")
+	w.Resize(fyne.Size{
+		Width:  500,
+		Height: 500,
+	})
+
+	downloadButton := widget.NewButton("Download", func() {
+		go StartDownload()
+	})
+	dropDown := widget.NewSelect(boardTitles, func(chosen string) {
+		board = boardMap[chosen]
+	})
+	progress = widget.NewProgressBar()
+
+	folderDialog := dialog.NewFolderOpen(func(lu fyne.ListableURI, err error) {
+		directory = lu.Path()
+		fmt.Println(lu.Fragment())
+		fmt.Println(lu.Query())
+	}, w)
+	dialogOpenButton := widget.NewButton(directory, func() {
+		folderDialog.Show()
+	})
+	go func() {
+		for {
+			dialogOpenButton.SetText(directory)
+		}
+	}()
+
+	grid := container.New(layout.NewGridLayout(1), dialogOpenButton, dropDown, downloadButton, progress)
+	w.SetContent(grid)
+
+	w.ShowAndRun()
+}
+
+func StartDownload() {
+	if downloading {
+		return
+	}
+	downloading = true
 	wg := &sync.WaitGroup{}
 
 	if len(os.Args[1:]) == 1 {
@@ -46,6 +120,7 @@ func main() {
 	}
 	close(postChannel)
 	wg.Wait()
+	total = len(posts)
 
 	imageChannel := make(chan SaveFileInfo)
 	for i := 0; i < maxConcurrency; i++ {
@@ -64,6 +139,8 @@ func main() {
 
 	close(imageChannel)
 	wg.Wait()
+	downloading = false
+	progress.SetValue(0)
 }
 
 func Write(fn string, data []byte) {
@@ -75,7 +152,7 @@ func Write(fn string, data []byte) {
 }
 func Get(u string) []byte {
 	client := http.Client{
-		Timeout: time.Second * 5,
+		Timeout: time.Second * 50,
 	}
 	resp, err := client.Get(u)
 	if err != nil {
@@ -95,7 +172,7 @@ func GetListOfThreads(u string) []string {
 	pages := make([]Page, 0)
 	err := json.Unmarshal(Get(u), &pages)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	mainThreadsList := make([]string, 0)
 	for _, page := range pages {
@@ -130,22 +207,30 @@ func GetPosts(ch chan string, wg *sync.WaitGroup) {
 func DownloadImage(ch chan SaveFileInfo, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for saveInfo := range ch {
-		filePath := saveInfo.Board + "/" + saveInfo.Name + saveInfo.Extension
-		if _, err := os.Stat(saveInfo.Board); errors.Is(err, os.ErrNotExist) {
-			if err := os.Mkdir(saveInfo.Board, fs.ModePerm); err != nil {
+		filePath := directory + "/" + saveInfo.Board + "/" + saveInfo.Name + saveInfo.Extension
+		if _, err := os.Stat(directory + "/" + saveInfo.Board); errors.Is(err, os.ErrNotExist) {
+			if err := os.Mkdir(directory+"/"+saveInfo.Board, fs.ModePerm); err != nil {
 				fmt.Println(err)
 			}
 		}
 		if _, err := os.Stat(filePath); err == nil {
+			IncrementDownloaded()
 			continue
 		}
 		Write(filePath, Get(saveInfo.Url))
+		IncrementDownloaded()
 	}
 }
 func AppendPost(p []Post) {
 	lock.Lock()
 	defer lock.Unlock()
 	posts = append(posts, p...)
+}
+func IncrementDownloaded() {
+	lock.Lock()
+	downloaded++
+	progress.SetValue(float64(downloaded) / float64(total))
+	lock.Unlock()
 }
 
 type Page struct {
